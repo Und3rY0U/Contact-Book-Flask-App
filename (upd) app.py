@@ -4,7 +4,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
 from datetime import datetime
 import json
+import uuid
 app = Flask(__name__)
+
 
 with open("config.json") as f:
     params = json.load(f)["params"]
@@ -54,13 +56,17 @@ class _Counter(object):
 
 class Book1(db.Model):
     sno = db.Column(db.Integer, primary_key=True)
-    userid = db.Column(db.String(20), unique=True, nullable=False)
+    userid = db.Column(db.String(36), unique=False, nullable=False)
     name = db.Column(db.Text, unique=True, nullable=False)
     tel = db.Column(db.String(14), unique=True, nullable=False)
-    email = db.Column(db.String(30), unique=True, nullable=True)
+    email = db.Column(db.String(30), unique=False, nullable=True)
     address = db.Column(db.Text, unique=False, nullable=True)
     color = db.Column(db.String(30), unique=False, nullable=False)
-    date = db.Column(db.String(20), unique=True, nullable=True)
+    date = db.Column(db.String(20), unique=False, nullable=True)
+
+from contact_api import contact_api, init_api
+app.register_blueprint(contact_api)
+init_api(db, Book1)
 
 
 class User(db.Model):
@@ -73,8 +79,9 @@ class User(db.Model):
     date = db.Column(db.Date, unique=True, nullable=True)
 
 # Create the tables
-db.create_all()
-db.session.commit()
+with app.app_context():
+    db.create_all()
+    db.session.commit()
 
 
 @app.route("/")
@@ -147,7 +154,7 @@ def edit(sno):
 
                 if sno == "0":
                     entry = Book1(userid=user.userid, name=name, tel=tel, date=datetime.now(),
-                                  email=email, address=address, color=color)
+                                        email=email, address=address, color=color)
                     db.session.add(entry)
                     db.session.commit()
                     return redirect("/")
